@@ -22,21 +22,29 @@ updater = Updater(token=bot_token, use_context=True)
 # Инициализируем API OpenAI с помощью ключа API
 openai.api_key = api_key
 
-# Инициализируем переменную messages
-messages = []
-
 # Создаем функцию-обработчик команды /start
 def start(update, context):
     context.bot.send_message(chat_id=update.effective_chat.id, text="Hello, I'm ChatGPT! How can I help you?")
+
+# Создаем функцию-обработчик команды /clear
+def clear(update, context):
+    # Очищаем историю сообщений
+    context.chat_data.clear()
+    context.bot.send_message(chat_id=update.effective_chat.id, text="Start new dialogue.")
 
 # Создаем функцию-обработчик текстовых сообщений
 def echo(update, context):
     # Получаем текст сообщения пользователя
     user_message = update.message.text
 
-    # Обновляем историю диалога пользователя
-    global messages
+    # Получаем историю сообщений из контекста
+    messages = context.chat_data.get('messages', [])
+    
+    # Добавляем сообщение пользователя в историю
     messages.append({"role": "user", "content": user_message})
+    
+    # Сохраняем историю сообщений в контекст
+    context.chat_data['messages'] = messages
 
     # Получаем ответ от ChatGPT
     completion = openai.ChatCompletion.create(
@@ -53,14 +61,18 @@ def echo(update, context):
     # Получаем текст ответа от ChatGPT
     chatgpt_response = completion.choices[0]['message']
 
-    # Обновляем историю диалога пользователя
+    # Добавляем ответ ChatGPT в историю
     messages.append({"role": "system", "content": chatgpt_response['content']})
 
+    # Сохраняем историю сообщений в контекст
+    context.chat_data['messages'] = messages
+    
     # Отправляем ответ от ChatGPT пользователю
     context.bot.send_message(chat_id=update.effective_chat.id, text=chatgpt_response['content'])
 
 # Регистрируем обработчики команд и текстовых сообщений
 updater.dispatcher.add_handler(CommandHandler('start', start))
+updater.dispatcher.add_handler(CommandHandler('clear', clear))
 updater.dispatcher.add_handler(MessageHandler(Filters.text & ~Filters.command, echo))
 
 # Запускаем бота Telegram
