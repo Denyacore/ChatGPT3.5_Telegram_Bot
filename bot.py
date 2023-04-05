@@ -22,6 +22,9 @@ updater = Updater(token=bot_token, use_context=True)
 # Инициализируем API OpenAI с помощью ключа API
 openai.api_key = api_key
 
+# Инициализируем переменную messages
+messages = []
+
 # Создаем функцию-обработчик команды /start
 def start(update, context):
     context.bot.send_message(chat_id=update.effective_chat.id, text="Hello, I'm ChatGPT! How can I help you?")
@@ -31,10 +34,14 @@ def echo(update, context):
     # Получаем текст сообщения пользователя
     user_message = update.message.text
 
+    # Обновляем историю диалога пользователя
+    global messages
+    messages.append({"role": "user", "content": user_message})
+
     # Получаем ответ от ChatGPT
     completion = openai.ChatCompletion.create(
         model="gpt-3.5-turbo", 
-        messages=[{"role": "user", "content": user_message}],
+        messages=messages,
         max_tokens=1024,
         n=1,
         stop=None,
@@ -45,6 +52,9 @@ def echo(update, context):
 
     # Получаем текст ответа от ChatGPT
     chatgpt_response = completion.choices[0]['message']
+
+    # Обновляем историю диалога пользователя
+    messages.append({"role": "system", "content": chatgpt_response['content']})
 
     # Отправляем ответ от ChatGPT пользователю
     context.bot.send_message(chat_id=update.effective_chat.id, text=chatgpt_response['content'])
