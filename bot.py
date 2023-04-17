@@ -50,7 +50,7 @@ def echo(update, context):
     completion = openai.ChatCompletion.create(
         model="gpt-3.5-turbo", 
         messages=messages,
-        max_tokens=1024,
+        max_tokens=3072,
         n=1,
         stop=None,
         temperature=0.5,
